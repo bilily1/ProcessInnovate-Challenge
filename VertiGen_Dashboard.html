@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Amadou DIALLO, Moulaye Abdoule Hady HAIDARA">
+
+<meta name="description" content="VertiGen : projet étudiant intelligent de production d'hydrogène vert développé dans le cadre de ProcessInnovate 2026.">
+
+<meta name="keywords" content="VertiGen, Hydrogène Vert, IA, MPC, LSTM, ProcessInnovate 2026, Génie Industriel, Énergie Durable">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="VertiGen - Projet ProcessInnovate 2026">
+<meta property="og:description" content="Projet étudiant intelligent de production d'hydrogène vert développé par Amadou DIALLO et Moulaye Abdoule Hady HAIDARA.">
+
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:title" content="VertiGen - Projet ProcessInnovate 2026">
+<meta property="twitter:description" content="Projet étudiant intelligent de production d'hydrogène vert piloté par IA.">
+<title>VertiGen - Dashboard ProcessInnovate 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #060910;
+  --surface:  #0c1220;
+  --card:     #111827;
+  --border:   #1e2d40;
+  --teal:     #00d4a1;
+  --teal-dim: #004d3b;
+  --blue:     #38a8f5;
+  --amber:    #f5a623;
+  --coral:    #f06060;
+  --purple:   #9d7eff;
+  --gray:     #4a5568;
+  --text:     #e8f0fe;
+  --muted:    #6b7fa3;
+  --font-head:'Syne', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,161,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,161,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative; z-index: 10;
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+  background: linear-gradient(90deg, rgba(0,212,161,0.05) 0%, transparent 60%);
+}
+
+.logo {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  color: var(--teal);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.logo .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.header-meta { display: flex; align-items: center; gap: 1.5rem; }
+.badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  padding: 4px 10px; border-radius: 3px; text-transform: uppercase;
+}
+.badge-emi  { background: rgba(56,168,245,0.15); color: var(--blue); border: 1px solid rgba(56,168,245,0.3); }
+.badge-live { background: rgba(0,212,161,0.12); color: var(--teal); border: 1px solid rgba(0,212,161,0.3); }
+
+.site-info { color: var(--muted); font-size: 11px; }
+
+/* ── NAV TABS ── */
+nav {
+  position: relative; z-index: 10;
+  display: flex; gap: 0; border-bottom: 1px solid var(--border);
+  padding: 0 2rem; background: var(--surface);
+  overflow-x: auto;
+}
+.tab {
+  padding: 14px 24px; cursor: pointer; font-family: var(--font-mono);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  border-bottom: 2px solid transparent; white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--teal); border-color: var(--teal); }
+
+/* ── MAIN LAYOUT ── */
+main { position: relative; z-index: 1; padding: 2rem; max-width: 1600px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px; margin-bottom: 2rem;
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.kpi {
+  background: var(--card); padding: 1.2rem 1.4rem;
+  position: relative; overflow: hidden;
+  transition: background 0.2s;
+}
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--accent, var(--teal));
+}
+.kpi:hover { background: #161f30; }
+.kpi-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.kpi-value { font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: var(--accent, var(--teal)); line-height: 1; }
+.kpi-unit  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.kpi-delta { font-size: 10px; margin-top: 6px; }
+.kpi-delta.up   { color: var(--teal); }
+.kpi-delta.down { color: var(--coral); }
+
+/* ── CARDS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.grid-1 { margin-bottom: 1.5rem; }
+@media(max-width:900px){ .grid-2,.grid-3{grid-template-columns:1fr;} }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 1.5rem; position: relative; overflow: hidden;
+}
+.card::after {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%; background: var(--accent, var(--teal));
+  opacity: 0.6;
+}
+.card-title {
+  font-family: var(--font-head); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .dot-accent { width: 6px; height: 6px; border-radius: 50%; background: var(--accent, var(--teal)); }
+
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap canvas { width: 100% !important; }
+
+/* ── COMPARISON BARS ── */
+.compare-row {
+  display: flex; flex-direction: column; gap: 1.2rem;
+  padding: 0.5rem 0;
+}
+.compare-item { display: flex; flex-direction: column; gap: 6px; }
+.compare-label { display: flex; justify-content: space-between; font-size: 11px; }
+.compare-label .name { color: var(--muted); }
+.compare-label .vals { display: flex; gap: 1rem; }
+.compare-label .v-classic { color: var(--coral); }
+.compare-label .v-mpc     { color: var(--teal); }
+.bar-track {
+  height: 20px; background: rgba(255,255,255,0.04);
+  border-radius: 3px; overflow: hidden; position: relative;
+  display: flex;
+}
+.bar-classic { height: 100%; border-radius: 3px 0 0 3px; background: var(--coral); opacity: 0.7; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.bar-mpc     { height: 100%; border-radius: 3px; background: var(--teal);  opacity: 0.85; transition: width 1s cubic-bezier(.4,0,.2,1) 0.2s; position: absolute; top: 0; left: 0; }
+
+/* ── REGIME PIE ── */
+.regime-row { display: flex; align-items: center; gap: 2rem; margin-top: 0.5rem; }
+.regime-legend { display: flex; flex-direction: column; gap: 0.8rem; flex: 1; }
+.regime-item { display: flex; flex-direction: column; gap: 4px; }
+.regime-name { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.regime-name .dot { width: 8px; height: 8px; border-radius: 50%; }
+.regime-bar-wrap { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+.regime-bar { height: 100%; border-radius: 3px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+.regime-pct { font-size: 12px; font-weight: 600; }
+
+/* ── HEATMAP TABLE ── */
+.heatmap-container { overflow-x: auto; }
+.heatmap-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.heatmap-table th { padding: 4px 6px; color: var(--muted); text-align: center; font-weight: 600; letter-spacing: 0.05em; }
+.heatmap-table td { padding: 3px 2px; text-align: center; }
+.heatmap-cell {
+  width: 40px; height: 26px; display: inline-flex;
+  align-items: center; justify-content: center;
+  border-radius: 3px; font-size: 9px; font-weight: 600;
+  transition: transform 0.1s;
+}
+.heatmap-cell:hover { transform: scale(1.15); z-index: 2; }
+
+/* ── LCOH GAUGE ── */
+.lcoh-compare {
+  display: flex; gap: 2rem; align-items: stretch; margin-top: 0.5rem;
+}
+.lcoh-box {
+  flex: 1; background: rgba(0,0,0,0.3); border-radius: 8px;
+  padding: 1.2rem; display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--border);
+}
+.lcoh-tag { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lcoh-val { font-family: var(--font-head); font-weight: 800; font-size: 2.4rem; }
+.lcoh-sub { font-size: 10px; color: var(--muted); }
+.lcoh-bar-wrap { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.lcoh-bar { height: 100%; border-radius: 4px; }
+
+/* ── WEEK TIMELINE ── */
+.week-labels {
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: var(--muted);
+  margin-bottom: 4px; padding: 0 2px;
+}
+
+/* ── FOOTER ── */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface);
+  font-size: 10px; color: var(--muted);
+  margin-top: 2rem;
+}
+.footer-logo { font-family: var(--font-head); font-weight: 700; color: var(--teal); font-size: 13px; }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-family: var(--font-head); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── MPC INSIGHT BOX ── */
+.insight {
+  background: rgba(0,212,161,0.05); border: 1px solid rgba(0,212,161,0.2);
+  border-radius: 8px; padding: 1rem 1.4rem;
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 1.5rem;
+}
+.insight-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.insight-text { font-size: 12px; line-height: 1.7; color: var(--text); }
+.insight-text strong { color: var(--teal); }
+
+/* ── ROADMAP ── */
+.roadmap { display: flex; gap: 0; position: relative; margin: 1rem 0; }
+.roadmap::before {
+  content: ''; position: absolute; top: 28px; left: 60px; right: 60px;
+  height: 2px; background: linear-gradient(90deg, var(--teal), var(--blue), var(--purple));
+}
+.roadmap-step { flex: 1; text-align: center; position: relative; }
+.roadmap-node {
+  width: 56px; height: 56px; border-radius: 50%;
+  margin: 0 auto 12px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; position: relative; z-index: 2;
+  font-family: var(--font-head); font-weight: 800; font-size: 11px;
+  border: 2px solid;
+}
+.roadmap-year { font-size: 11px; color: var(--teal); margin-bottom: 4px; font-weight: 600; }
+.roadmap-label { font-size: 10px; color: var(--muted); line-height: 1.4; }
+.roadmap-val { font-size: 10px; font-weight: 600; margin-top: 4px; }
+
+/* ── ANIMATE IN ── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.card, .kpi { animation: fadeUp 0.4s ease both; }
+.card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.1s}
+.card:nth-child(3){animation-delay:.15s} .card:nth-child(4){animation-delay:.2s}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="dot"></span>
+    VertiGen
+  </div>
+  <div class="header-meta">
+    <div class="site-info">Tarfaya, Maroc · 29°N 12°W</div>
+    <span class="badge badge-emi">EMI · ProcessInnovate 2026</span>
+    <span class="badge badge-live">● Live Data</span>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="showPanel('overview')">Vue d'ensemble</div>
+  <div class="tab" onclick="showPanel('production')">Production H₂</div>
+  <div class="tab" onclick="showPanel('mpc')">Contrôle MPC</div>
+  <div class="tab" onclick="showPanel('economie')">Économie</div>
+  <div class="tab" onclick="showPanel('roadmap')">Roadmap</div>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL 1 — OVERVIEW                                   -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="panel-overview" class="panel active">
+
+  <div class="kpi-strip">
+    <div class="kpi" style="--accent:var(--teal)">
+      <div class="kpi-label">H₂ Produit / an</div>
+      <div class="kpi-value">200</div>
+      <div class="kpi-unit">Tonnes H₂/an</div>
+      <div class="kpi-delta up">↑ Cible atteinte</div>
+    </div>
+    <div class="kpi" style="--accent:var(--blue)">
+      <div class="kpi-label">LCOH (MPC)</div>
+      <div class="kpi-value">2.87</div>
+      <div class="kpi-unit">USD / kg H₂</div>
+      <div class="kpi-delta up">↓ −9% vs benchmark EU</div>
+    </div>
+    <div class="kpi" style="--accent:var(--amber)">
+      <div class="kpi-label">Taux utilisation</div>
+      <div class="kpi-value">72<span style="font-size:1.2rem">%</span></div>
+      <div class="kpi-unit">Électrolyseur PEM</div>
+      <div class="kpi-delta up">↑ +60% vs classique</div>
+    </div>
+    <div class="kpi" style="--accent:var(--teal)">
+      <div class="kpi-label">CO₂ évité</div>
+      <div class="kpi-value">2k</div>
+      <div class="kpi-unit">Tonnes CO₂/an</div>
+      <div class="kpi-delta up">≡ 870 voitures retirées</div>
+    </div>
+    <div class="kpi" style="--accent:var(--purple)">
+      <div class="kpi-label">CAPEX</div>
+      <div class="kpi-value">2.5</div>
+      <div class="kpi-unit">M€ investissement</div>
+      <div class="kpi-delta up">ROI médian : 8 ans</div>
+    </div>
+    <div class="kpi" style="--accent:var(--coral)">
+      <div class="kpi-label">Durée vie PEM</div>
+      <div class="kpi-value">>80k</div>
+      <div class="kpi-unit">Heures (avec MPC)</div>
+      <div class="kpi-delta up">↑ +33% vs classique</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--teal)">
+      <div class="card-title"><span class="dot-accent"></span>Production H₂ mensuelle (tonnes)</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-monthly-overview"></canvas>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--amber)">
+      <div class="card-title"><span class="dot-accent"></span>Mix énergétique annuel</div>
+      <div style="display:flex;align-items:center;gap:2rem;height:220px">
+        <div class="chart-wrap" style="height:200px;width:200px;flex-shrink:0">
+          <canvas id="chart-mix-donut"></canvas>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:1rem">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Solaire PV - 300 kW installés</div>
+            <div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--amber)">70.6%</div>
+            <div style="font-size:10px;color:var(--muted)">7 717 MWh/an</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Éolien - 200 kW installés</div>
+            <div style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--blue)">29.4%</div>
+            <div style="font-size:10px;color:var(--muted)">3 214 MWh/an</div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px">
+            Total : 10 931 MWh/an · 94% valorisé
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card" style="--accent:var(--coral)">
+      <div class="card-title"><span class="dot-accent"></span>Régimes de fonctionnement</div>
+      <div class="regime-row">
+        <div class="chart-wrap" style="height:140px;width:140px;flex-shrink:0">
+          <canvas id="chart-regime-donut"></canvas>
+        </div>
+        <div class="regime-legend">
+          <div class="regime-item">
+            <div class="regime-name"><span class="dot" style="background:var(--coral)"></span>Déficit (&lt;20%)</div>
+            <div class="regime-bar-wrap"><div class="regime-bar" style="width:8.5%;background:var(--coral)"></div></div>
+            <div class="regime-pct" style="color:var(--coral)">8.5% — 743 h</div>
+          </div>
+          <div class="regime-item">
+            <div class="regime-name"><span class="dot" style="background:var(--teal)"></span>Normal (20–100%)</div>
+            <div class="regime-bar-wrap"><div class="regime-bar" style="width:31.3%;background:var(--teal)"></div></div>
+            <div class="regime-pct" style="color:var(--teal)">31.3% — 2749 h</div>
+          </div>
+          <div class="regime-item">
+            <div class="regime-name"><span class="dot" style="background:var(--amber)"></span>Surplus (&gt;100%)</div>
+            <div class="regime-bar-wrap"><div class="regime-bar" style="width:60.2%;background:var(--amber)"></div></div>
+            <div class="regime-pct" style="color:var(--amber)">60.2% — 5292 h</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
+        60% du temps en surplus → le MPC est <span style="color:var(--teal);font-weight:600">critique</span> pour maximiser la valorisation
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--blue)">
+      <div class="card-title"><span class="dot-accent"></span>Paramètres système</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Puissance PV</span>
+          <span style="color:var(--text);font-weight:600">300 kW</span>
+        </div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Puissance éolienne</span>
+          <span style="color:var(--text);font-weight:600">2 × 100 kW</span>
+        </div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Électrolyseur PEM</span>
+          <span style="color:var(--text);font-weight:600">500 kW · η=70%</span>
+        </div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Stockage H₂</span>
+          <span style="color:var(--text);font-weight:600">2 t · Hydrures</span>
+        </div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Irradiance moy.</span>
+          <span style="color:var(--amber);font-weight:600">6.2 kWh/m²/j</span>
+        </div>
+        <div style="height:1px;background:var(--border)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">Vent moy. (80m)</span>
+          <span style="color:var(--blue);font-weight:600">9.8 m/s</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--purple)">
+      <div class="card-title"><span class="dot-accent"></span>Intelligence IA - 3 couches</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+        <div style="background:rgba(157,126,255,0.07);border:1px solid rgba(157,126,255,0.2);border-radius:6px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--purple);margin-bottom:4px">① LSTM · Prévision météo</div>
+          <div style="font-size:10px;color:var(--muted)">Horizon 48h · précision ±15%</div>
+        </div>
+        <div style="background:rgba(0,212,161,0.07);border:1px solid rgba(0,212,161,0.2);border-radius:6px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--teal);margin-bottom:4px">② MPC · Dispatch temps réel</div>
+          <div style="font-size:10px;color:var(--muted)">Modulation 20→100% · PEM</div>
+        </div>
+        <div style="background:rgba(56,168,245,0.07);border:1px solid rgba(56,168,245,0.2);border-radius:6px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--blue);margin-bottom:4px">③ Optimisation convexe</div>
+          <div style="font-size:10px;color:var(--muted)">Minimisation LCOH · −18%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL 2 — PRODUCTION                                 -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="panel-production" class="panel">
+
+  <div class="section-title">Profils de production</div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--teal)">
+      <div class="card-title"><span class="dot-accent"></span>Production mensuelle H₂ (tonnes)</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chart-monthly-bar"></canvas>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--amber)">
+      <div class="card-title"><span class="dot-accent"></span>Profil journalier par saison (kg H₂/h)</div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chart-season"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid-1" style="--accent:var(--blue)">
+    <div class="card-title"><span class="dot-accent"></span>Décomposition énergétique - Solaire vs Éolien (MWh/mois)</div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="chart-decomp"></canvas>
+    </div>
+  </div>
+
+  <div class="card grid-1" style="--accent:var(--purple)">
+    <div class="card-title"><span class="dot-accent"></span>Heatmap production H₂ - Heure × Mois (kg/h moyen)</div>
+    <div class="heatmap-container" id="heatmap-container"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL 3 — MPC                                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="panel-mpc" class="panel">
+
+  <div class="section-title">Contrôle MPC vs Classique</div>
+
+  <div class="insight">
+    <div class="insight-icon">⚡</div>
+    <div class="insight-text">
+      Le contrôleur MPC réduit les cycles on/off de <strong>−71%</strong> (224 → 66/an),
+      prolongeant la durée de vie de la membrane PEM de <strong>60 000 → 80 000 heures</strong>.
+      Le taux d'utilisation passe de <strong>45% → 72%</strong>, soit +60% de H₂ produit à puissance installée égale.
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card" style="--accent:var(--teal)">
+      <div class="card-title"><span class="dot-accent"></span>Taux d'utilisation</div>
+      <div class="compare-row">
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">Classique (on/off)</span>
+            <div class="vals"><span class="v-classic">45%</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-classic" style="width:45%"></div></div>
+        </div>
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">MPC VertiGen</span>
+            <div class="vals"><span class="v-mpc">72%</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-mpc" style="width:72%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <span style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--teal)">+60%</span>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">gain taux utilisation</div>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--coral)">
+      <div class="card-title"><span class="dot-accent"></span>Cycles on/off annuels</div>
+      <div class="compare-row">
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">Classique</span>
+            <div class="vals"><span class="v-classic">224</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-classic" style="width:100%"></div></div>
+        </div>
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">MPC VertiGen</span>
+            <div class="vals"><span class="v-mpc">66</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-mpc" style="width:29.5%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <span style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--teal)">−71%</span>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">réduction des cycles</div>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--purple)">
+      <div class="card-title"><span class="dot-accent"></span>Durée de vie membrane PEM</div>
+      <div class="compare-row">
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">Classique</span>
+            <div class="vals"><span class="v-classic">60 000 h</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-classic" style="width:75%"></div></div>
+        </div>
+        <div class="compare-item">
+          <div class="compare-label">
+            <span class="name">MPC VertiGen</span>
+            <div class="vals"><span class="v-mpc">&gt;80 000 h</span></div>
+          </div>
+          <div class="bar-track"><div class="bar-mpc" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;text-align:center">
+        <span style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--teal)">+33%</span>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">durée de vie gagnée</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid-1" style="--accent:var(--teal)">
+    <div class="card-title"><span class="dot-accent"></span>Production H₂ horaire - Semaine type (15–21 juin 2024)</div>
+    <div class="chart-wrap" style="height:260px">
+      <canvas id="chart-week"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--blue)">
+      <div class="card-title"><span class="dot-accent"></span>Puissance disponible vs injectée (semaine)</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-week-power"></canvas>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--amber)">
+      <div class="card-title"><span class="dot-accent"></span>Logique de dispatch MPC</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+        <div style="background:rgba(240,96,96,0.08);border-left:3px solid var(--coral);padding:10px 14px;border-radius:0 6px 6px 0">
+          <div style="font-size:10px;font-weight:600;color:var(--coral);margin-bottom:4px">ZONE VEILLE · P &lt; 100 kW</div>
+          <div style="font-size:10px;color:var(--muted)">Électrolyseur en standby. Buffer activé si prévision future favorable (LSTM 48h).</div>
+        </div>
+        <div style="background:rgba(0,212,161,0.08);border-left:3px solid var(--teal);padding:10px 14px;border-radius:0 6px 6px 0">
+          <div style="font-size:10px;font-weight:600;color:var(--teal);margin-bottom:4px">ZONE NOMINALE · 100–500 kW</div>
+          <div style="font-size:10px;color:var(--muted)">Modulation proportionnelle 20→100%. Anticipation surplus +6h → montée en charge.</div>
+        </div>
+        <div style="background:rgba(245,166,35,0.08);border-left:3px solid var(--amber);padding:10px 14px;border-radius:0 6px 6px 0">
+          <div style="font-size:10px;font-weight:600;color:var(--amber);margin-bottom:4px">ZONE SURPLUS · P &gt; 500 kW</div>
+          <div style="font-size:10px;color:var(--muted)">Saturation électrolyseur + stockage buffer (50% surplus). Production maximale.</div>
+        </div>
+        <div style="background:rgba(157,126,255,0.08);border-left:3px solid var(--purple);padding:10px 14px;border-radius:0 6px 6px 0">
+          <div style="font-size:10px;font-weight:600;color:var(--purple);margin-bottom:4px">HORIZON LSTM · 48h</div>
+          <div style="font-size:10px;color:var(--muted)">Recalcul toutes les 15 min. Minimisation coût actualisé H₂ (fonction objectif convexe).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL 4 — ÉCONOMIE                                   -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="panel-economie" class="panel">
+
+  <div class="section-title">Analyse économique — Horizon 20 ans</div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--teal)">
+      <div class="card-title"><span class="dot-accent"></span>LCOH — VertiGen vs Benchmark</div>
+      <div class="lcoh-compare">
+        <div class="lcoh-box">
+          <div class="lcoh-tag">Classique</div>
+          <div class="lcoh-val" style="color:var(--coral)">3.15</div>
+          <div class="lcoh-sub">USD / kg H₂</div>
+          <div class="lcoh-bar-wrap"><div class="lcoh-bar" style="width:52%;background:var(--coral)"></div></div>
+        </div>
+        <div class="lcoh-box">
+          <div class="lcoh-tag">MPC VertiGen</div>
+          <div class="lcoh-val" style="color:var(--teal)">2.87</div>
+          <div class="lcoh-sub">USD / kg H₂</div>
+          <div class="lcoh-bar-wrap"><div class="lcoh-bar" style="width:47.8%;background:var(--teal)"></div></div>
+        </div>
+        <div class="lcoh-box">
+          <div class="lcoh-tag">Benchmark EU 2026</div>
+          <div class="lcoh-val" style="color:var(--gray)">3.5–6</div>
+          <div class="lcoh-sub">USD / kg H₂</div>
+          <div class="lcoh-bar-wrap"><div class="lcoh-bar" style="width:75%;background:var(--gray)"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:10px;color:var(--muted);text-align:center">
+        Cible 2030 : <span style="color:var(--teal);font-weight:600">2 USD/kg</span> à grande échelle (−35% CAPEX unitaire à 50 MW)
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--blue)">
+      <div class="card-title"><span class="dot-accent"></span>VAN sur 20 ans · 3 scénarios</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-van"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--amber)">
+      <div class="card-title"><span class="dot-accent"></span>Cash-flow cumulé — Scénario médian (4 $/kg)</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-cashflow"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="--accent:var(--purple)">
+      <div class="card-title"><span class="dot-accent"></span>Impact environnemental annuel</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:8px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--muted)">CO₂ directement évité</span>
+            <span style="font-size:11px;font-weight:600;color:var(--teal)">2 000 t/an</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:80%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:4px"></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">≡ 870 voitures thermiques retirées</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--muted)">Réduction vs H₂ gris</span>
+            <span style="font-size:11px;font-weight:600;color:var(--teal)">−85%</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:85%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:4px"></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">vs vaporeformage gaz naturel (10 kg CO₂/kg H₂)</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--muted)">Énergie fossile économisée</span>
+            <span style="font-size:11px;font-weight:600;color:var(--amber)">5 200 MWh/an</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:65%;background:linear-gradient(90deg,var(--amber),var(--coral));border-radius:4px"></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">≡ consommation de 1 450 ménages</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--muted)">Eau électrolyse récyclée</span>
+            <span style="font-size:11px;font-weight:600;color:var(--blue)">85%</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:85%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:4px"></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:4px">Circuit fermé · 1 800 m³/an consommés</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL 5 — ROADMAP                                    -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="panel-roadmap" class="panel">
+
+  <div class="section-title">Feuille de route industrielle</div>
+
+  <div class="card grid-1" style="--accent:var(--teal)">
+    <div class="card-title"><span class="dot-accent"></span>Déploiement VertiGen · 2027 → 2030+</div>
+    <div class="roadmap">
+      <div class="roadmap-step">
+        <div class="roadmap-node" style="background:rgba(0,212,161,0.12);border-color:var(--teal);color:var(--teal)">
+          <span>2027</span>
+        </div>
+        <div class="roadmap-year">Pilote</div>
+        <div class="roadmap-label">Site ONEE<br>Tarfaya</div>
+        <div class="roadmap-val" style="color:var(--teal)">500 kW<br>200 t H₂/an</div>
+      </div>
+      <div class="roadmap-step">
+        <div class="roadmap-node" style="background:rgba(56,168,245,0.12);border-color:var(--blue);color:var(--blue)">
+          <span>2028</span>
+        </div>
+        <div class="roadmap-year">Régional</div>
+        <div class="roadmap-label">Industrie<br>Maroc Sud</div>
+        <div class="roadmap-val" style="color:var(--blue)">10 MW<br>4 000 t H₂/an</div>
+      </div>
+      <div class="roadmap-step">
+        <div class="roadmap-node" style="background:rgba(157,126,255,0.12);border-color:var(--purple);color:var(--purple)">
+          <span>2030+</span>
+        </div>
+        <div class="roadmap-year">National</div>
+        <div class="roadmap-label">Plan H₂<br>Export EU</div>
+        <div class="roadmap-val" style="color:var(--purple)">50–100 MW<br>40 000 t/an</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="--accent:var(--blue)">
+      <div class="card-title"><span class="dot-accent"></span>Economies d'échelle — LCOH vs capacité</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chart-scale"></canvas>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--amber)">
+      <div class="card-title"><span class="dot-accent"></span>Alignement axes ProcessInnovate</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+        <div style="background:rgba(0,212,161,0.06);border:1px solid rgba(0,212,161,0.2);border-radius:6px;padding:10px 14px">
+          <div style="font-size:10px;font-weight:600;color:var(--teal);margin-bottom:3px">Optimisation systèmes renouvelables</div>
+          <div style="font-size:10px;color:var(--muted)">Mix hybride solaire-éolien optimisé par HOMER Pro</div>
+        </div>
+        <div style="background:rgba(56,168,245,0.06);border:1px solid rgba(56,168,245,0.2);border-radius:6px;padding:10px 14px">
+          <div style="font-size:10px;font-weight:600;color:var(--blue);margin-bottom:3px">Intégration technologies propres</div>
+          <div style="font-size:10px;color:var(--muted)">Électrolyse PEM + stockage hydrures métalliques</div>
+        </div>
+        <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:6px;padding:10px 14px">
+          <div style="font-size:10px;font-weight:600;color:var(--amber);margin-bottom:3px">Stockage & conversion d'énergie</div>
+          <div style="font-size:10px;color:var(--muted)">Hydrures métalliques + algorithme MPC-LSTM</div>
+        </div>
+        <div style="background:rgba(157,126,255,0.06);border:1px solid rgba(157,126,255,0.2);border-radius:6px;padding:10px 14px">
+          <div style="font-size:10px;font-weight:600;color:var(--purple);margin-bottom:3px">Décarbonation & innovations durables</div>
+          <div style="font-size:10px;color:var(--muted)">−2 000 t CO₂/an · IA prédictive scalable</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid-1" style="--accent:var(--teal);text-align:center;padding:2.5rem">
+    <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:700;color:var(--muted);margin-bottom:1rem;letter-spacing:0.05em">
+      « L'hydrogène vert n'est pas l'énergie du futur.
+    </div>
+    <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:700;color:var(--teal);margin-bottom:1.5rem">
+      C'est l'énergie que nous construisons aujourd'hui. »
+    </div>
+    <div style="font-size:11px;color:var(--muted)">VertiGen — ProcessInnovate 2026 — École Mohammadia d'Ingénieurs</div>
+  </div>
+
+</div>
+
+</main>
+
+<footer>
+  <div class="footer-logo">VertiGen</div>
+  <div>Tarfaya · 29°N 12°W · NASA POWER Dataset 2024 · 8 784h</div>
+  <div>ProcessInnovate 2026 · EMI · Hydrogène Vert & Transitions Énergétiques</div>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const D = {"monthly_h2":[11.54,15.26,17.22,19.1,20.88,20.39,22.4,21.21,16.43,14.13,10.29,11.15],"monthly_solar":[457.7,527.9,697.5,788.2,809.0,797.4,803.7,741.5,654.7,570.7,446.1,422.3],"monthly_wind":[173.6,307.5,245.7,256.3,333.8,317.2,420.0,415.6,241.7,200.1,114.5,187.8],"season_profiles":{"Hiver":[6.563,6.509,6.33,6.177,6.004,5.9,5.843,6.236,13.672,24.869,35.825,44.305,49.25,49.018,43.898,34.812,23.368,11.757,5.837,5.704,5.942,6.19,6.431,6.594],"Printemps":[6.961,6.927,6.883,6.845,6.825,6.717,7.799,15.902,28.744,41.833,53.561,62.994,67.598,67.624,63.278,53.853,41.149,27.207,14.028,7.482,6.906,6.847,6.926,6.952],"Été":[8.549,8.548,8.581,8.671,8.837,9.004,11.019,19.541,30.543,42.137,55.331,66.124,71.88,72.301,68.725,59.612,47.178,33.517,20.348,10.556,8.792,8.643,8.613,8.586],"Automne":[4.545,4.625,4.672,4.676,4.695,4.738,4.799,9.271,20.539,32.259,42.774,51.38,54.889,53.01,47.202,37.423,25.314,13.222,6.055,4.844,4.615,4.504,4.413,4.398]},"heatmap":[[5.33,9.24,6.44,6.56,7.88,7.01,9.06,9.53,5.65,4.61,3.37,5.29],[5.18,9.41,6.51,6.32,7.93,7.15,9.0,9.45,5.64,4.67,3.56,5.13],[4.87,9.28,6.54,6.12,7.97,7.26,9.02,9.42,5.67,4.71,3.64,5.04],[4.52,9.13,6.43,6.1,7.98,7.42,9.01,9.54,5.66,4.76,3.6,5.07],[4.38,8.65,6.29,6.14,8.03,7.6,9.18,9.7,5.67,4.81,3.6,5.16],[4.38,8.19,6.21,5.91,8.0,7.8,9.41,9.76,5.68,4.83,3.7,5.28],[4.42,7.84,6.14,6.6,10.62,11.18,11.28,10.6,5.82,4.83,3.74,5.39],[4.57,8.39,10.41,16.13,21.17,20.84,19.73,18.09,12.52,9.74,5.53,5.88],[11.03,17.08,23.34,29.95,32.98,31.68,30.69,29.3,24.5,21.59,15.49,13.13],[21.63,29.57,37.18,44.42,43.98,42.85,42.84,40.74,36.64,33.6,26.49,23.72],[32.49,41.83,48.44,56.82,55.52,54.29,57.67,54.0,48.01,44.19,36.06,33.54],[41.24,51.25,57.49,65.72,65.86,65.66,68.09,64.6,58.75,52.54,42.81,40.87],[47.17,56.78,63.21,70.07,69.6,70.85,73.29,71.47,63.66,55.33,45.67,44.28],[47.04,57.71,63.0,69.55,70.38,71.0,74.2,71.66,62.84,53.01,43.18,42.86],[42.21,53.44,58.65,64.64,66.59,68.05,70.88,67.23,57.64,47.08,36.89,36.65],[33.09,43.92,49.68,54.83,57.08,59.3,61.94,57.6,47.84,37.25,27.18,28.01],[21.41,32.12,37.15,41.85,44.47,47.22,49.3,45.02,34.53,25.47,15.94,17.13],[9.7,19.4,23.16,27.52,30.94,34.06,35.38,31.13,21.1,13.19,5.38,6.66],[3.79,9.52,9.9,14.35,17.85,20.86,22.11,18.1,9.69,5.77,2.72,4.43],[3.96,8.45,5.96,7.69,8.81,9.81,11.79,10.04,6.57,5.1,2.85,4.88],[4.3,8.54,5.77,7.53,7.44,7.26,9.82,9.24,6.21,4.85,2.78,5.16],[4.72,8.68,5.77,7.47,7.31,6.89,9.75,9.22,5.98,4.76,2.76,5.34],[5.24,8.83,5.88,7.37,7.55,6.79,9.66,9.33,5.72,4.64,2.87,5.38],[5.61,8.97,6.03,7.14,7.69,6.87,9.46,9.37,5.6,4.52,3.07,5.36]],"regimes":{"deficit":743,"normal":2749,"surplus":5292},"kpis":{"total_h2":200.0,"best_month":7,"worst_month":11,"pct_solar":70.6,"pct_wind":29.4,"lcoh_mpc":2.87,"lcoh_classic":3.15,"capex":2.5,"roi_years":8,"co2_avoided":2000,"util_mpc":72,"util_classic":45,"cycles_classic":224,"cycles_mpc":66},"week_h2":[9.598,10.02,10.187,9.93,9.769,10.219,14.072,23.486,36.448,53.98,68.973,76.833,79.174,78.368,73.589,64.616,52.231,37.671,23.293,11.902,8.855,8.231,8.233,9.067,11.151,12.271,12.349,12.833,13.22,12.964,16.316,23.458,30.267,41.131,55.681,70.298,73.948,75.242,72.473,64.318,48.991,35.886,22.135,10.84,7.814,7.237,7.452,7.369,7.52,7.673,7.849,7.805,7.696,7.609,11.466,24.598,39.498,53.887,65.572,73.836,78.033,78.029,72.957,63.858,51.338,36.383,21.313,9.161,6.241,5.667,5.669,6.346,6.818,7.579,8.014,8.28,8.548,8.639,10.506,17.728,27.926,41.819,57.588,67.332,73.175,70.652,70.268,62.382,49.958,35.426,21.238,10.146,7.36,7.003,6.962,7.173,7.751,8.613,9.575,10.38,11.305,11.529,15.422,30.345,46.843,60.431,72.334,80.121,82.446,81.988,77.058,68.542,55.948,40.989,25.596,12.465,9.965,9.874,9.854,10.594,11.475,12.429,12.891,13.125,13.831,15.519,19.713,33.562,49.031,61.426,73.749,81.733,84.33,83.256,78.403,69.239,56.849,42.197,26.914,13.323,9.78,9.597,9.903,10.308,11.255,11.258,11.83,13.306,13.748,13.747,16.274,24.798,39.402,53.44,61.764,75.87,78.834,78.25,73.1,63.893,47.921,36.989,25.942,15.51,12.957,11.92,11.524,11.181],"week_power":[525.5,548.6,557.8,543.8,535.2,559.8,770.7,1285.7,1994.5,2952.8,3771.3,4199.4,4326.0,4280.9,4019.3,3529.7,2853.9,2058.9,1273.5,651.0,484.5,450.5,450.7,496.4,610.5,671.8,676.1,702.7,723.8,709.9,893.4,1284.0,1656.1,2249.6,3044.2,3842.1,4040.9,4111.3,3960.1,3514.7,2677.7,1961.9,1210.6,593.1,427.6,396.2,408.1,403.5,411.9,420.3,427.7,421.7,416.9,628.1,1346.7,2161.5,2947.6,3585.1,4035.4,4263.4,4262.1,3984.7,3488.2,2805.1,1988.7,1165.4,501.1,341.6,310.2,310.4,347.5,373.3,414.9,438.7,453.3,468.0,473.0,575.3,970.5,1528.1,2287.8,3149.7,3682.2,4001.4,3863.2,3842.1,3410.5,2731.0,1936.8,1161.3,555.0,402.7,383.3,381.1,392.7,424.3,471.5,524.2,568.4,619.2,631.6,844.7,1661.1,2563.0,3305.2,3954.7,4378.9,4504.7,4478.7,4208.9,3743.9,3056.4,2239.7,1399.1,681.8,545.3,540.4,539.4,580.0,628.4,680.7,706.0,719.0,757.7,850.0,1079.5,1837.3,2683.2,3360.4,4032.9,4468.2,4609.2,4550.0,4284.6,3784.2,3107.5,2307.0,1471.8,728.9,535.3,525.4,542.2,564.5,616.4,616.7,648.1,728.8,753.0,752.9,891.1,1357.2,2155.5,2922.3,3376.6,4146.9,4308.4,4276.4,3995.3,3492.5,2620.0,2022.8,1419.2,848.8,709.3,652.6,631.1,612.4]};
+
+const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const HOURS  = Array.from({length:24},(_,i)=>i+'h');
+
+// Chart.js global defaults
+Chart.defaults.color = '#6b7fa3';
+Chart.defaults.borderColor = '#1e2d40';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 10;
+
+// ── PANEL SWITCHING ──────────────────────────────────────────────────────────
+const chartsBuilt = {};
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (!chartsBuilt[name]) { buildCharts(name); chartsBuilt[name] = true; }
+}
+
+// ── CHART BUILDERS ────────────────────────────────────────────────────────────
+function mk(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  return new Chart(el, cfg);
+}
+
+function buildCharts(panel) {
+  if (panel === 'overview')    buildOverview();
+  if (panel === 'production')  buildProduction();
+  if (panel === 'mpc')         buildMpc();
+  if (panel === 'economie')    buildEconomie();
+  if (panel === 'roadmap')     buildRoadmap();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function buildOverview() {
+  mk('chart-monthly-overview', {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: [{
+        data: D.monthly_h2,
+        backgroundColor: D.monthly_h2.map(v => v === Math.max(...D.monthly_h2)
+          ? 'rgba(0,212,161,0.9)' : 'rgba(0,212,161,0.35)'),
+        borderColor: 'rgba(0,212,161,0.8)',
+        borderWidth: 1, borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} t H₂` } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: '#1e2d40' }, ticks: { callback: v => v+'t' } }
+      }
+    }
+  });
+
+  mk('chart-mix-donut', {
+    type: 'doughnut',
+    data: {
+      labels: ['Solaire PV','Éolien'],
+      datasets: [{ data: [70.6, 29.4],
+        backgroundColor: ['rgba(245,166,35,0.8)','rgba(56,168,245,0.8)'],
+        borderColor: ['#060910'], borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed}%` } } }
+    }
+  });
+
+  mk('chart-regime-donut', {
+    type: 'doughnut',
+    data: {
+      labels: ['Déficit','Normal','Surplus'],
+      datasets: [{ data: [743, 2749, 5292],
+        backgroundColor: ['rgba(240,96,96,0.8)','rgba(0,212,161,0.8)','rgba(245,166,35,0.8)'],
+        borderColor: '#060910', borderWidth: 3,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ── PRODUCTION ────────────────────────────────────────────────────────────────
+function buildProduction() {
+  mk('chart-monthly-bar', {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: [{
+        label: 'H₂ (t)',
+        data: D.monthly_h2,
+        backgroundColor: D.monthly_h2.map((v,i) => {
+          const mx = Math.max(...D.monthly_h2), mn = Math.min(...D.monthly_h2);
+          const t = (v-mn)/(mx-mn);
+          return `rgba(${Math.round(56+t*(-56+0))},${Math.round(168+t*(212-168))},${Math.round(245+t*(161-245))},0.85)`;
+        }),
+        borderRadius: 4, borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)} tonnes H₂`}}
+      },
+      scales: { x:{grid:{display:false}}, y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+'t'}} }
+    }
+  });
+
+  const seasonColors = {
+    'Hiver': 'rgba(56,168,245,0.85)',
+    'Printemps': 'rgba(0,212,161,0.85)',
+    'Été': 'rgba(245,166,35,0.85)',
+    'Automne': 'rgba(240,96,96,0.85)',
+  };
+  mk('chart-season', {
+    type: 'line',
+    data: {
+      labels: HOURS,
+      datasets: Object.entries(D.season_profiles).map(([s, vals]) => ({
+        label: s, data: vals, borderColor: seasonColors[s],
+        backgroundColor: seasonColors[s].replace('0.85','0.08'),
+        borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{ position:'top', labels:{boxWidth:12,padding:16} } },
+      scales: { x:{grid:{display:false}}, y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+' kg'}} }
+    }
+  });
+
+  mk('chart-decomp', {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { label: 'Solaire PV (MWh)', data: D.monthly_solar,
+          backgroundColor: 'rgba(245,166,35,0.75)', borderRadius: 3, borderWidth: 0 },
+        { label: 'Éolien (MWh)', data: D.monthly_wind,
+          backgroundColor: 'rgba(56,168,245,0.75)', borderRadius: 3, borderWidth: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{ position:'top', labels:{boxWidth:12,padding:16} } },
+      scales: { x:{stacked:false,grid:{display:false}}, y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+' MWh'}} }
+    }
+  });
+
+  buildHeatmap();
+}
+
+function buildHeatmap() {
+  const container = document.getElementById('heatmap-container');
+  if (!container) return;
+  const data = D.heatmap;
+  const allVals = data.flat();
+  const maxV = Math.max(...allVals);
+  const minV = 0;
+
+  function colorFor(v) {
+    const t = (v - minV) / (maxV - minV);
+    const r = Math.round(6   + t * (0  - 6  ));
+    const g = Math.round(9   + t * (212- 9  ));
+    const bl= Math.round(16  + t * (100- 16 ));
+    const a = 0.2 + t * 0.75;
+    return `rgba(${r},${g},${bl},${a})`;
+  }
+
+  let html = '<table class="heatmap-table"><thead><tr><th>Heure</th>';
+  MONTHS.forEach(m => html += `<th>${m}</th>`);
+  html += '</tr></thead><tbody>';
+  for (let h = 0; h < 24; h++) {
+    html += `<tr><td style="color:var(--muted);padding:2px 6px;font-weight:600">${h}h</td>`;
+    for (let m = 0; m < 12; m++) {
+      const v = data[h][m];
+      const bg = colorFor(v);
+      const txtColor = v > maxV*0.5 ? '#e8f0fe' : '#6b7fa3';
+      html += `<td><div class="heatmap-cell" style="background:${bg};color:${txtColor}">${v.toFixed(0)}</div></td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// ── MPC ───────────────────────────────────────────────────────────────────────
+function buildMpc() {
+  const weekLabels = Array.from({length: 168}, (_, i) => {
+    const day = Math.floor(i/24);
+    const h = i % 24;
+    return h === 12 ? `J${day+1}` : '';
+  });
+
+  mk('chart-week', {
+    type: 'line',
+    data: {
+      labels: Array.from({length:168},(_,i)=>i),
+      datasets: [{
+        label: 'H₂ produit (kg/h)',
+        data: D.week_h2,
+        borderColor: 'rgba(0,212,161,0.9)',
+        backgroundColor: 'rgba(0,212,161,0.1)',
+        borderWidth: 1.5, fill: true, tension: 0.3, pointRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(1)} kg H₂/h`}}
+      },
+      scales: {
+        x: { grid:{display:false},
+          ticks: { callback: (_, i) => {
+            if (i % 24 === 12) return ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][Math.floor(i/24)];
+            return '';
+          }}
+        },
+        y: { grid:{color:'#1e2d40'}, ticks:{callback:v=>v+' kg'} }
+      }
+    }
+  });
+
+  mk('chart-week-power', {
+    type: 'line',
+    data: {
+      labels: Array.from({length:168},(_,i)=>i),
+      datasets: [
+        { label: 'Puissance disponible', data: D.week_power,
+          borderColor: 'rgba(107,127,163,0.5)', borderWidth: 1,
+          fill: false, tension: 0.3, pointRadius: 0 },
+        { label: 'Seuil MPC max (500 kW)', data: Array(168).fill(500),
+          borderColor: 'rgba(0,212,161,0.4)', borderWidth: 1,
+          borderDash: [4,4], fill: false, pointRadius: 0 },
+        { label: 'Seuil min (100 kW)', data: Array(168).fill(100),
+          borderColor: 'rgba(240,96,96,0.4)', borderWidth: 1,
+          borderDash: [4,4], fill: false, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{ position:'top', labels:{boxWidth:10,padding:12,font:{size:9}} } },
+      scales: {
+        x: { grid:{display:false},
+          ticks: { callback: (_, i) => {
+            if (i % 24 === 0) return ['L','M','Me','J','V','S','D'][Math.floor(i/24)];
+            return '';
+          }}
+        },
+        y: { grid:{color:'#1e2d40'}, ticks:{callback:v=>v+'kW'}, max: 2000 }
+      }
+    }
+  });
+}
+
+// ── ÉCONOMIE ──────────────────────────────────────────────────────────────────
+function buildEconomie() {
+  const CAPEX = 2_500_000, OPEX = 150_000, RATE = 0.08, Y = 20;
+  const prices = [3, 4, 5];
+  const h2 = D.kpis.total_h2 * 1000; // kg
+
+  function vanCalc(prix) {
+    const cf = prix * h2 - OPEX;
+    return (cf * (1 - Math.pow(1+RATE,-Y)) / RATE - CAPEX) / 1e6;
+  }
+
+  mk('chart-van', {
+    type: 'bar',
+    data: {
+      labels: ['Pessimiste\n3 $/kg','Médian\n4 $/kg','Optimiste\n5 $/kg'],
+      datasets: [{
+        label: 'VAN (M€)',
+        data: prices.map(vanCalc),
+        backgroundColor: prices.map(p => {
+          const v = vanCalc(p);
+          return v >= 0 ? 'rgba(0,212,161,0.75)' : 'rgba(240,96,96,0.75)';
+        }),
+        borderRadius: 4, borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` VAN : ${ctx.parsed.y.toFixed(2)} M€`}}
+      },
+      scales: {
+        x:{grid:{display:false}},
+        y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+' M€'},
+          afterDataLimits(scale){scale.min=Math.min(scale.min,-0.5);scale.max=Math.max(scale.max,0.5);}
+        }
+      }
+    }
+  });
+
+  // Cash-flow cumulé
+  const cfYears = Array.from({length:Y+1},(_,i)=>i);
+  let cumCF = [-CAPEX];
+  for(let y=0;y<Y;y++) cumCF.push(cumCF[cumCF.length-1] + (4*h2 - OPEX));
+  cumCF = cumCF.map(v=>v/1e6);
+
+  mk('chart-cashflow', {
+    type: 'line',
+    data: {
+      labels: cfYears.map(y=>'An '+y),
+      datasets: [{
+        label: 'Cash-flow cumulé',
+        data: cumCF,
+        borderColor: 'rgba(0,212,161,0.9)',
+        segment: { borderColor: ctx => ctx.p0.parsed.y < 0 ? 'rgba(240,96,96,0.85)' : 'rgba(0,212,161,0.85)' },
+        backgroundColor: 'rgba(0,212,161,0.08)',
+        fill: 'origin', borderWidth: 2, tension: 0.3, pointRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)} M€`}}
+      },
+      scales: {
+        x:{grid:{display:false},ticks:{maxTicksLimit:6}},
+        y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+' M€'}}
+      }
+    }
+  });
+}
+
+// ── ROADMAP ───────────────────────────────────────────────────────────────────
+function buildRoadmap() {
+  const capacities = [0.5, 2, 5, 10, 20, 50, 100];
+  const lcoh = capacities.map(c => {
+    const base = 2.87;
+    return +(base * Math.pow(c/0.5, -0.18)).toFixed(2);
+  });
+
+  mk('chart-scale', {
+    type: 'line',
+    data: {
+      labels: capacities.map(c => c+'MW'),
+      datasets: [{
+        label: 'LCOH ($/kg)',
+        data: lcoh,
+        borderColor: 'rgba(56,168,245,0.9)',
+        backgroundColor: 'rgba(56,168,245,0.1)',
+        borderWidth: 2, fill: true, tension: 0.4,
+        pointBackgroundColor: 'rgba(56,168,245,0.9)',
+        pointRadius: 5, pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y.toFixed(2)} $/kg H₂`}},
+        annotation: {}
+      },
+      scales: {
+        x:{grid:{display:false}},
+        y:{grid:{color:'#1e2d40'},ticks:{callback:v=>v+' $/kg'},
+          min: 1, max: 3.5}
+      }
+    }
+  });
+}
+
+// ── INIT — build overview on load ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  buildCharts('overview');
+  chartsBuilt['overview'] = true;
+});
+</script>
+</body>
+</html>
