@@ -127,14 +127,11 @@ Tarfaya          Maroc Sud         Export EU
 ProcessInnovate-Challenge/
 ├── README.md
 ├── LICENSE
-├── dashboard/
-│   └── VertiGen_Dashboard.html    # Dashboard interactif (Chart.js · standalone)
-├── data/
-│   └── tarfaya_data.csv           # NASA POWER Dataset 2024 · 8 784h · Tarfaya
-└── docs/
-    ├── Rapport.pdf                # Rapport technique complet
-    ├── Cahier_de_charge.pdf       # Cahier des charges ProcessInnovate 2026
-    └── Programme_GreenHydrogenDay.pdf
+├── Images/                        # Figures et visuels du projet
+├── Presentation.pptx              # Présentation pitch ProcessInnovate 2026
+├── Rapport.pdf                    # Rapport technique complet (22 pages)
+├── tarfaya_data.csv               # NASA POWER Dataset 2024 · 8 784h · Tarfaya
+└── VertiGen_Dashboard.html        # Dashboard interactif (Chart.js · standalone)
 ```
 
 ---
@@ -146,7 +143,7 @@ Aucune installation requise — le dashboard est 100% standalone (HTML + Chart.j
 ```bash
 # Cloner le repo
 git clone https://github.com/bilily1/ProcessInnovate-Challenge.git
-cd ProcessInnovate-Challenge/dashboard
+cd ProcessInnovate-Challenge
 
 # Ouvrir dans le navigateur
 open VertiGen_Dashboard.html          # macOS
